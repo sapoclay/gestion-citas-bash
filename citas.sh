@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Archivo para guardar los datos
-ARCHIVO_CITAS="citas.txt"
-
 # Colores
 verde="\033[1;32m"
 cierreVerde="\033[0m"
@@ -11,295 +8,255 @@ cierreRojo="\033[0m"
 amarillo="\033[1;33m"
 cierreAmarillo="\033[0m"
 
-# Función para mostrar el menú
-mostrar_menu() {
-    echo "============="
-    echo -e "${verde}Menú de Citas${cierreVerde}"
-    echo "============="
-    echo -e "${rojo}1${cierreRojo}. Añadir nueva cita"
-    echo -e "${rojo}2${cierreRojo}. Buscar cita por nombre del paciente"
-    echo -e "${rojo}3${cierreRojo}. Buscar citas por hora de inicio"
-    echo -e "${rojo}4${cierreRojo}. Buscar citas por hora de fin"
-    echo -e "${rojo}5${cierreRojo}. Listar citas ordenadas por nombre del paciente"
-    echo -e "${rojo}6${cierreRojo}. Listar citas ordenadas por hora de inicio"
-    echo -e "${rojo}7${cierreRojo}. Eliminar cita por nombre del paciente"
-    echo -e "${rojo}8${cierreRojo}. Visitar entreunosyceros"
+# Función para mostrar la ayuda
+show_help() {
+    cabecera "          AYUDA"
     echo ""
-    echo -e "${rojo}0${cierreRojo}. Salir"
+    echo -e "${amarillo}Uso: citas.sh [opciones]${cierreAmarillo}"
+    echo "Opciones:"
+    echo "  -h, --help             Mostrar esta ayuda"
+    echo "  -a, --add              Añadir una cita con HORA_INICIO, HORA_FIN y NOMBRE_PACIENTE (10:00 11:00 NombrePaciente)."
+    echo "  -d, --delete           Borrar una cita de un paciente. Sin argumentos."
+    echo "  -s, --search           Buscar pacientes por el nombre."
+    echo "  -i, --init             Buscar pacientes que empiecen a una HORA_INICIO determinada."
+    echo "  -e, --end              Buscar pacientes que terminen a una HORA_FIN determinada."
+    echo "  -n, --name             Listar todas las citas ordenadas por NOMBRE_PACIENTE. Sin argumentos."
+    echo "  -o, --hour             Listar todas las citas ordenadas por HORA_INICIO. Sin argumentos."
     echo ""
+    exit 0
 }
 
+# Función para validar el formato de hora (HH:MM)
+validar_hora() {
+    if [[ "$1" =~ ^([01]?[0-9]|2[0-3]):[0-5][0-9]$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
 
-# Función para mostrar la cabecera
 function cabecera() {
     echo -e "${verde}==============================="
     echo "  $1"
     echo "==============================="
     echo -e "${cierreVerde}"
-    echo ""
 }
 
-# Función para pausar la ejecución del programa
-function pausar() {
-    
-    # -n 1 indica que read debe leer solo un carácter de entrada
-    # -s Hace que la entrada del usuario no se muestre en la pantalla
-    # -r: indica que read debe interpretar la entrada sin interpretar caracteres de escape
-    # -p muestra un mensaje en la pantalla
-    echo ""
-    echo -e "${amarillo}"
-    read -n 1 -s -r -p "Pulsa cualquier tecla para continuar..."
-    echo -e "${cierreAmarillo}"
-}
-
-# Función para validar si una hora está en el rango de 00:00 a 23:59
-validar_hora() {
-    hora=$1
-    if [[ ! $hora =~ ^([01][0-9]|2[0-3])(:[0-5][0-9])?$ ]]; then
-        echo ""
-        echo -e "${rojo}Error: Formato de hora incorrecto. Usa el formato HH o HH:MM (00:00 - 23:59).${cierreRojo}"
-        sleep 2
-        # return 1 hará que la función validar_hora devuelva un valor de salida de 1 en lugar de cerrar todo el programa
-        return 1
-    fi
-}
-
-agregar_cita() {
-    clear
-    cabecera "Añadir cita"
-    echo ""
-    read -p "Nombre del paciente: " nombre_paciente
-    read -p "Hora de inicio (formato HH:MM): " hora_inicio
-    read -p "Hora de fin (formato HH:MM): " hora_fin
-    
-    # Validar el formato de las horas
-    validar_hora "$hora_inicio"
-    if [[ $? -eq 1 ]]; then
-        pausar
-        return
-    fi
-    validar_hora "$hora_fin"
-    if [[ $? -eq 1 ]]; then
-        pausar
-        return
+# Función para añadir citas. Comprobación parámetros, existencia archivo citas.txt, formato de horas, solapamiento citas, comprobación de si ya hay una cita
+# para el usuario
+add_cita() { 
+    cabecera "       Añadir citas"
+    if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+        echo -e "${rojo}Faltan parámetros. Uso: add_cita HORA_INICIO HORA_FIN NOMBRE_PACIENTE${cierreRojo}"
+        exit 1
     fi
 
-    # Convertir las horas en minutos totales para comparación
-    inicio_minutos=$(( 10#$(date -d "$hora_inicio" +%H) * 60 + 10#$(date -d "$hora_inicio" +%M) ))
-    fin_minutos=$(( 10#$(date -d "$hora_fin" +%H) * 60 + 10#$(date -d "$hora_fin" +%M) ))
-
-    # Verificar si la hora de inicio es anterior a la hora de fin
-    if (( inicio_minutos >= fin_minutos )); then
-        echo ""
-        echo -e "${rojo}Error: La hora de inicio debe ser anterior a la hora de fin.${cierreRojo}"
-        pausar
-        return
+    if [ ! -e citas.txt ]; then
+        touch citas.txt
+        echo -e "${verde}Se ha creado la BD citas.txt${cierreVerde}"
     fi
 
-    # Comprobar si el archivo de citas existe, si no, crearlo
-    if [[ ! -e "$ARCHIVO_CITAS" ]]; then
-        touch "$ARCHIVO_CITAS"
+    if ! validar_hora "$1" || ! validar_hora "$2"; then
+        echo -e "${rojo}Las horas deben estar en el formato correcto (HH:MM) y en el rango de 00:00 a 23:59.${cierreRojo}"
+        exit 1
     fi
 
-    # Comprobar si el nombre ya existe en el archivo de citas
-    if grep -q "^$nombre_paciente," "$ARCHIVO_CITAS"; then
-        echo ""
-        echo -e "${rojo}Error: El nombre introducido ya existe en el archivo de citas.${cierreRojo}"
-        pausar
-        return
-    fi
-
-    # Crear un arreglo de horas ocupadas
-    horas_ocupadas=()
-    while IFS=',' read -r _ existente_inicio existente_fin; do
-        inicio_existente_minutos=$(( 10#$(date -d "$existente_inicio" +%H) * 60 + 10#$(date -d "$existente_inicio" +%M) ))
-        fin_existente_minutos=$(( 10#$(date -d "$existente_fin" +%H) * 60 + 10#$(date -d "$existente_fin" +%M) ))
+    if [[ "$1" < "$2" ]]; then
+        solapamiento=false
+        while IFS=',' read -r inicio_existente fin_existente _; do
+            # Calcula los minutos correspondientes a las horas y minutos de inicio y fin de la cita existente
+            inicio_existente_minutos=$(( 10#$(date -d "$inicio_existente" +%H) * 60 + 10#$(date -d "$inicio_existente" +%M) ))
+            fin_existente_minutos=$(( 10#$(date -d "$fin_existente" +%H) * 60 + 10#$(date -d "$fin_existente" +%M) ))
+            
+            # Calcula los minutos correspondientes a las horas y minutos de inicio y fin de la nueva cita
+            nuevo_inicio_minutos=$(( 10#$(date -d "$1" +%H) * 60 + 10#$(date -d "$1" +%M) ))
+            nuevo_fin_minutos=$(( 10#$(date -d "$2" +%H) * 60 + 10#$(date -d "$2" +%M) ))
+            
+            # Verifica si hay solapamiento entre las citas
+            if (( nuevo_inicio_minutos >= inicio_existente_minutos && nuevo_inicio_minutos < fin_existente_minutos )) || \
+            (( nuevo_fin_minutos > inicio_existente_minutos && nuevo_fin_minutos <= fin_existente_minutos )) || \
+            (( inicio_existente_minutos >= nuevo_inicio_minutos && inicio_existente_minutos < nuevo_fin_minutos )) || \
+            (( fin_existente_minutos > nuevo_inicio_minutos && fin_existente_minutos <= nuevo_fin_minutos )); then
+                solapamiento=true
+                break
+            fi
+        done < citas.txt
         
-        for (( i = inicio_existente_minutos; i < fin_existente_minutos; i++ )); do
-            horas_ocupadas+=("$i")
-        done
-    done < "$ARCHIVO_CITAS"
+        if $solapamiento; then
+            echo -e "${rojo}La cita se solapa con otra cita existente.${cierreRojo}"
+        else
+            if grep -q "$3" citas.txt; then
+                echo -e "${rojo}Ya existe una cita para el paciente $3.${cierreRojo}"
+            else
+                echo "$1,$2,$3" >> citas.txt
+                echo -e "${verde}Cita para $3 añadida de forma correcta. Hora de inicio: $1. Hora de fin: $2${cierreVerde}"
+            fi
+        fi
+    else
+        echo -e "${rojo}La hora de inicio debe ser anterior a la hora de fin.${cierreRojo}"
+    fi
+}
 
-    # Verificar solapamiento de horas
-    for (( i = inicio_minutos; i < fin_minutos; i++ )); do
-        if [[ " ${horas_ocupadas[@]} " =~ " $i " ]]; then
+eliminar_cita() {
+    cabecera "    Eliminar una cita"
+    if [ -e citas.txt ]; then
+        read -p "Escribe el nombre del paciente para eliminar su cita: " nombre_paciente
+        if [ -z "$nombre_paciente" ]; then
             echo ""
-            echo -e "${rojo}Error: La cita se solapa con otra cita existente.${cierreRojo}"
-            pausar
+            echo -e "${rojo}El nombre del paciente no puede estar vacío.${cierreRojo}"
             return
         fi
-    done
 
-    # Añadir la cita al archivo
-    echo "$nombre_paciente,$hora_inicio,$hora_fin" >> "$ARCHIVO_CITAS"
-    echo ""
-    echo -e "${verde}Cita añadida de forma correcta!${cierreVerde}"
-    pausar
-}
-
-# Función para buscar cita por nombre de paciente
-buscar_por_nombre() {
-    clear
-    cabecera "Buscar por nombre"
-    echo ""
-    read -p "Escribe el patrón de búsqueda para el nombre del paciente: " patron
-    echo ""
-
-    # Filtrar las líneas del archivo por el primer campo (nombre del paciente) usando awk
-    resultados=$(awk -F ',' -v pattern="$patron" -v highlight="$patron" '{ gsub(highlight, "\033[1;31m&\033[0m", $1); if ($1 ~ pattern) print "Paciente: " $1 ". Hora de inicio: " $2 " - Hora de fin: " $3 }' "$ARCHIVO_CITAS")
-
-    # Verificar si se encontraron resultados
-    if [[ -z "$resultados" ]]; then
+        if grep -q "$nombre_paciente" citas.txt; then
+            echo ""
+            echo "Se encontró una cita para el paciente $nombre_paciente:"
+            grep "$nombre_paciente" citas.txt
+            echo ""
+            echo -e "${rojo}"
+            read -p "¿Estás seguro de que quieres eliminar esta cita? (s/n): " confirmacion
+            echo -e "${cierreRojo}"
+            if [ "$confirmacion" = "s" ]; then
+                grep -v "$nombre_paciente" citas.txt > citas_tmp.txt
+                mv citas_tmp.txt citas.txt
+                echo -e "${verde}Cita para el paciente $nombre_paciente eliminada.${cierreVerde}"
+            else
+                echo ""
+                echo -e "${amarillo}Eliminación cancelada.${cierreAmarillo}"
+            fi
+        else
+            echo ""
+            echo -e "${amarillo}No se encontró ninguna cita para el paciente $nombre_paciente.${cierreAmarillo}"
+        fi
+    else
         echo ""
-        echo -e "${rojo}No se han encontrado coincidencias de búsqueda.${cierreRojo}"
-    else
-        echo "$resultados"
+        echo -e "${rojo}El archivo citas.txt no existe. Primero añade registros de citas.${cierreRojo}"
     fi
-
-    echo ""
-    pausar
 }
 
-# Función para buscar citas por hora de inicio
-buscar_por_inicio() {
-    clear
-    cabecera "Buscar por hora de inicio"
-    echo ""
-    read -p "Escribe la hora de inicio (formato HH:MM) para buscar citas: " hora_inicio
-    validar_hora "$hora_inicio"
-
-    # Filtrar las líneas del archivo por el segundo campo (hora de inicio) usando awk
-    resultados=$(awk -F ',' -v pattern="$hora_inicio" '
-        BEGIN { highlight = "\033[1;31m" pattern "\033[0m" }
-        $2 == pattern {
-            print "";
-            gsub(pattern, highlight, $2);
-            print "Paciente: " $1 ". Hora de inicio: " $2 " - Hora de fin: " $3;
-        }
-    ' "$ARCHIVO_CITAS")
-
-    # Verificar si se encontraron resultados
-    if [[ -z "$resultados" ]]; then
-        echo -e "${rojo}No se han encontrado coincidencias de búsqueda.${cierreRojo}"
+buscar_por_nombre() {
+    cabecera "   Búsqueda por nombre"
+    if [ -z "$1" ]; then
+        echo ""
+        echo -e "${rojo}Falta la opción del nombre del paciente.${cierreRojo}"
+    elif [ -e citas.txt ]; then
+        resultados=$(grep -i ",.*$1" citas.txt)
+        if [ -n "$resultados" ]; then
+            echo "$resultados" | while IFS=',' read -r inicio fin paciente; do
+                echo -e "-> ${verde}Paciente: $paciente ${cierreVerde}- Hora inicio: $inicio - Hora fin: $fin"
+            done
+        else
+            echo ""
+            echo -e "${amarillo}No se encontraron pacientes con el nombre '$1'.${cierreAmarillo}"
+        fi
     else
-        echo "$resultados"
+        echo ""
+        echo -e "${rojo}El archivo citas.txt no existe.${cierreRojo}"
     fi
-
-    echo ""
-    pausar
 }
 
-
-# Función para buscar citas por hora de fin
-buscar_por_fin() {
-    clear
-    cabecera "Buscar por hora de fin"
-    echo ""
-    read -p "Escribe la hora de fin (formato HH) para buscar citas: " hora_fin
-    validar_hora "$hora_fin"
-
-    # Filtrar las líneas del archivo por el tercer campo (hora de fin) usando awk
-    resultados=$(grep ",$hora_fin$" "$ARCHIVO_CITAS" | awk -F ',' -v highlight="$hora_fin" '
-        {
-            print "";
-            gsub(highlight, "\033[1;31m&\033[0m", $3);
-            print "Paciente: " $1 ". Hora de inicio: " $2 " - Hora de fin: " $3;
-            found = 1; # Marcar que se encontraron resultados
-        }
-        END {
-            if (found != 1) {
-                print "No se han encontrado coincidencias de búsqueda.";
-            }
-        }
-    ')
-
-    echo "$resultados"
-    echo ""
-    pausar
+# Función para buscar pacientes que empiecen a una hora determinada
+buscar_por_hora_inicio() {
+    cabecera "Búsqueda por hora de inicio"
+    if [ -z "$1" ]; then
+        echo -e "${rojo}Falta la opción de la hora de inicio.${cierreRojo}"
+        exit 1
+    elif ! validar_hora "$1"; then
+        echo -e "${rojo}La hora de inicio debe estar en el formato correcto (HH:MM) y en el rango de 00:00 a 23:59.${cierreRojo}"
+        exit 1
+    elif [ -e citas.txt ]; then
+        resultados=$(grep "^$1," citas.txt)
+        if [ -n "$resultados" ]; then
+            echo "Pacientes con cita que empiezan a la hora '$1':"
+            echo "$resultados" | while IFS=',' read -r inicio fin paciente; do
+                echo -e "-> Paciente: $paciente - ${verde}Hora inicio: $inicio ${cierreVerde}- Hora fin: $fin"
+            done
+        else
+            echo -e "${amarillo}No se encontraron pacientes con cita que empiecen a la hora '$1'.${cierreAmarillo}"
+        fi
+    else
+        echo -e "${rojo}El archivo citas.txt no existe.${cierreRojo}"
+        exit 1
+    fi
 }
 
-# Función para listar citas ordenadas por nombre de paciente
+# Función para buscar pacientes que terminen a una hora determinada
+buscar_por_hora_finalizacion() {
+    cabecera "Búsqueda por hora de finalización"
+
+    if [ -z "$1" ]; then
+        echo -e "${rojo}Falta la opción de la hora de finalización.${cierreRojo}"
+        exit 1
+    elif ! validar_hora "$1"; then
+        echo -e "${rojo}La hora de finalización debe estar en el formato correcto (HH:MM) y en el rango de 00:00 a 23:59.${cierreRojo}"
+        exit 1
+    fi
+    
+    if [ -e citas.txt ]; then
+        resultados=$(grep ",$1" citas.txt)
+        if [ -n "$resultados" ]; then
+            echo "Pacientes con cita que terminan a la hora '$1':"
+            echo "$resultados" | while IFS=',' read -r inicio fin paciente; do
+                echo -e "-> Paciente: $paciente - Hora inicio: $inicio - ${verde}Hora fin: $fin ${cierreVerde}"
+            done
+        else
+            echo -e "${rojo}No se encontraron pacientes con cita que terminen a la hora '$1'.${cierreRojo}"
+        fi
+    else
+        echo -e "${rojo}El archivo citas.txt no existe.${cierreRojo}"
+        exit 1
+    fi
+}
+
+# Función para listar citas ordenadas por nombre
 listar_por_nombre() {
-    clear
-    cabecera "Orden alfabético"
-    echo ""
-    sort -t ',' -k 1 "$ARCHIVO_CITAS" | awk -F ',' '{print "- Paciente: " $1 ". Hora de inicio: " $2 " - Hora de fin: " $3}'
-    pausar
+    cabecera "Listado ordenado por nombre"
+    # -k3 ordena vía key posición3
+    sort -t',' -k3 citas.txt | while IFS=',' read -r hora_inicio hora_fin paciente; do
+        echo -e "Paciente: ${verde}$paciente ${cierreVerde}- Hora inicio: $hora_inicio - Hora fin: $hora_fin"
+    done
 }
 
 # Función para listar citas ordenadas por hora de inicio
-listar_por_inicio() {
-    clear
-    cabecera "Ordenadado por hora de inicio"
-    echo ""
-    sort -t ',' -k 2 "$ARCHIVO_CITAS" | awk -F ',' '{print "- Paciente: " $1 ". Hora de inicio: " $2 " - Hora de fin: " $3}'
-    pausar
+listar_por_hora() {
+    cabecera "Ordenado por hora de inicio"
+    sort -t',' -k1 citas.txt | while IFS=',' read -r hora_inicio hora_fin paciente; do
+        echo -e "Paciente: $paciente - Hora inicio: ${verde}$hora_inicio ${cierreVerde}- Hora fin: $hora_fin"
+    done
 }
 
-# Función para abrir una web en el navegador por defecto del sistema Linux
-abrir_web() {
-    xdg-open https://entreunosyceros.net/
-}
-
-# Función para eliminar citas por medio del nombre de usuario
-eliminar_cita() {
-    clear
-    cabecera "Eliminar cita"
-    echo ""
-    read -p "Escribe el nombre del paciente cuya cita deseas eliminar: " nombre_paciente
-
-    # Verificar si el nombre existe en el archivo de citas
-    if grep -q "^$nombre_paciente," "$ARCHIVO_CITAS"; then
-        echo ""
-        echo -e "${rojo}"
-        read -p "¿Estás seguro de que deseas eliminar la cita de $nombre_paciente? (S/N): " confirmacion
-        echo -e "${cierreRojo}"
-
-        if [[ "$confirmacion" == "S" || "$confirmacion" == "s" ]]; then
-            grep -v "^$nombre_paciente," "$ARCHIVO_CITAS" > temp.txt
-            # verifica si el nombre existe en el archivo citas.txt. Si existe, se crea un nuevo archivo temporal sin la línea correspondiente al nombre del paciente 
-            # y se renombra a citas.txt, eliminando así la cita
-            mv temp.txt "$ARCHIVO_CITAS"
-            echo ""
-            echo -e "${verde}Cita eliminada correctamente.${cierreVerde}"
-        else
-            echo ""
-            echo -e "${amarillo}Eliminación cancelada.${cierreAmarillo}"
-        fi
-    else
-        echo ""
-        echo -e "${rojo}El nombre introducido no existe en el archivo de citas.${cierreRojo}"
-    fi
-
-    pausar
-}
-
-# Inicio del programa
-while true; do
-    clear
-    mostrar_menu
-    echo -e "${amarillo}"
-    read -p "Selecciona una opción: " opcion
-    echo -e "${cierreAmarillo}"
-    case $opcion in
-        0) echo ""; echo -e "${verde}¡Programa terminado! ... Saliendo${cierreVerde}"; exit 0 ;;
-        1) agregar_cita ;;
-        2) buscar_por_nombre ;;
-        3) buscar_por_inicio ;;
-        4) buscar_por_fin ;;
-        5) listar_por_nombre ;;
-        6) listar_por_inicio ;;
-        7) eliminar_cita ;;
-        8) abrir_web ;;
-        *)
-            # se verifica si la variable opcion no está vacía (-n "$opcion") y si no es ninguno de los números del 0 al 6. 
-            # En este caso, muestra el mensaje de "Opción inválida" 
-            if [[ -n "$opcion" ]]; then
-                echo ""
-                echo -e "${rojo} Opción inválida. Por favor, selecciona una opción válida. ${cierreRojo}"
-                pausar
-            fi
-            ;;
-    esac
-done
-
+# Menejo de opciones disponibles
+case "$1" in
+    -h|--help)
+        show_help
+        ;;
+    -a|--add)
+        shift
+        add_cita "$1" "$2" "$3"
+        ;;
+    -d|--delete)
+        shift
+        eliminar_cita 
+        ;;
+    -s|--search)
+        shift
+        buscar_por_nombre "$1"
+        ;;
+    -i|--init)
+        shift
+        buscar_por_hora_inicio "$1"
+        ;;
+    -e|--end)
+    	shift
+    	buscar_por_hora_finalizacion "$1"
+    	;;
+    -n|--name)
+        listar_por_nombre
+        ;;
+    -o|--hour)
+        listar_por_hora
+        ;;
+    *)
+        echo "Opción inválida. Utiliza -h o --help para ver la ayuda."
+        exit 1
+        ;;
+esac
