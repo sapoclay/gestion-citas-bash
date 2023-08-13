@@ -234,7 +234,6 @@ case "$1" in
         add_cita "$1" "$2" "$3"
         ;;
     -d|--delete)
-        shift
         eliminar_cita 
         ;;
     -s|--search)
