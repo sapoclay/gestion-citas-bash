@@ -1,5 +1,34 @@
 #!/bin/bash
 
+# a) realizar un script en bash llamado citas-menu.sh que nos permita utilizar las siguientes opciones a la hora de llamarlo:
+
+# -h ó --help -> para mostrar la ayuda 
+# -a ó --add -> para añadir una cita con HORA_INICIO, HORA_FIN, NOMBRE_PACIENTE
+# -d ó --delete -> para eliminar una cita utilizando el nombre del paciente
+# -s ó --search -> para buscar los pacientes que contengan un patrón determinado
+# -i ó --init -> para buscar los pacientes que empiecen a una HORA_INICIO determinada
+# -e ó --end -> para buscar los pacientes que terminen a una HORA_FIN determinada
+# -n ó --name -> para listar todas las citas ordenadas por NOMBRE_PACIENTE
+# -o ó --hour -> para listar todas las citas ordenadas por HORA_INICIO
+
+# * PARA cada operación se comprobará si se introducen el número de parámetros correcto y en el formato correcto
+# * Comprobar que HORA_INICIO es anterior a HORA_FIN
+# * Los datos se deben guardar en un archivo de texto llamado citas.txt
+# * HORA_INICIO y HORA_FIN son números entre 00 y 23
+# * Al introducir una cita se comprobará que no se solape con otra cita ya introducida
+# * NO deberíamos tener nombres de pacientes repetidos
+
+# b) Realizar un script llamado citas-menu.sh que sea la interfaz del script anterior 
+# para mostrar un menú con las siguientes opciones:
+
+# - Añadir cita nueva
+# - Eliminar una cita por nombre del paciente
+# - Buscar por nombre de paciente
+# - Buscar citas por hora de inicio
+# - Listas citas ordenadas por nombre de paciente
+# - Listar citas ordenadas por hora de inicio
+# - Salir del programa
+
 # Colores
 verde="\033[1;32m"
 cierreVerde="\033[0m"
@@ -12,7 +41,7 @@ cierreAmarillo="\033[0m"
 show_help() {
     cabecera "          AYUDA"
     echo ""
-    echo -e "${amarillo}Uso: citas.sh [opciones]${cierreAmarillo}"
+    echo -e "${amarillo}Uso: ./citas.sh [opciones]${cierreAmarillo}"
     echo "Opciones:"
     echo "  -h, --help             Mostrar esta ayuda"
     echo "  -a, --add              Añadir una cita con HORA_INICIO, HORA_FIN y NOMBRE_PACIENTE (10:00 11:00 NombrePaciente)."
