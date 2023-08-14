@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# a) realizar un script en bash llamado citas-menu.sh que nos permita utilizar las siguientes opciones a la hora de llamarlo:
+# a) realizar un script en bash llamado citas.sh que nos permita utilizar las siguientes opciones a la hora de llamarlo:
 
 # -h ó --help -> para mostrar la ayuda 
 # -a ó --add -> para añadir una cita con HORA_INICIO, HORA_FIN, NOMBRE_PACIENTE
@@ -18,7 +18,7 @@
 # * Al introducir una cita se comprobará que no se solape con otra cita ya introducida
 # * NO deberíamos tener nombres de pacientes repetidos
 
-# b) Realizar un script llamado citas-menu.sh que sea la interfaz del script anterior 
+# b) Realizar un script llamado citas.sh que sea la interfaz del script anterior 
 # para mostrar un menú con las siguientes opciones:
 
 # - Añadir cita nueva
