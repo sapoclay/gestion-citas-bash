@@ -47,3 +47,5 @@ Estas funciones muestran las citas almacenadas en el archivo citas.txt, ordenada
 El script utiliza un bucle case para manejar las diferentes opciones proporcionadas en la línea de comandos. Dependiendo de la opción elegida (como -a, -d, -s, etc.), se llama a la función correspondiente para realizar la acción requerida.
 
 En resumen, el script Bash utiliza una combinación de comandos de terminal, expresiones regulares y funciones personalizadas para administrar citas médicas de manera efectiva. Las funciones de validación, búsqueda y manipulación de archivos son fundamentales para lograr la funcionalidad del script y proporcionar una interfaz de usuario interactiva para la gestión de citas médicas.
+
+[Artículo](https://entreunosyceros.net/script-bash-para-gestionar-citas-desde-la-terminal/)
