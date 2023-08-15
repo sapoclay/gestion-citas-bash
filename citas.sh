@@ -64,6 +64,7 @@ validar_hora() {
     fi
 }
 
+# Función para generar la cabecera personalizada según la orden que reciba
 function cabecera() {
     echo -e "${verde}==============================="
     echo "  $1"
@@ -82,7 +83,7 @@ add_cita() {
 
     if [ ! -e citas.txt ]; then
         touch citas.txt
-        echo -e "${verde}Se ha creado la BD citas.txt${cierreVerde}"
+        echo -e "${verde}Se ha creado la BD en el archivo citas.txt${cierreVerde}"
     fi
 
     if ! validar_hora "$1" || ! validar_hora "$2"; then
@@ -162,6 +163,7 @@ eliminar_cita() {
     fi
 }
 
+# Función para buscar por nombre
 buscar_por_nombre() {
     cabecera "   Búsqueda por nombre"
     if [ -z "$1" ]; then
@@ -285,6 +287,9 @@ case "$1" in
         ;;
     *)
         echo "Opción inválida. Utiliza -h o --help para ver la ayuda."
+        exit 1
+        ;;
+esac
         exit 1
         ;;
 esac
